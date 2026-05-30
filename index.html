@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Dev Agent Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dashboard-body">
+  <div class="app-container">
+    
+    <!-- Sidebar Kiri -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="app-logo">
+          <span class="pulse-dot"></span>
+          <h2>AI Dev Agent</h2>
+        </div>
+        <button id="newChatBtn" class="btn-new-chat">+ New Chat</button>
+      </div>
+
+      <!-- State Context Memory Widgets -->
+      <div class="context-panel">
+        <div class="context-title">Active Context</div>
+        <div class="context-item" id="ctxRepo" title="Repository Aktif">
+          <span class="icon">📁</span>
+          <span class="label">Repo:</span>
+          <span class="val italic" id="valRepo">None</span>
+        </div>
+        <div class="context-item" id="ctxFile" title="File Terakhir">
+          <span class="icon">📄</span>
+          <span class="label">File:</span>
+          <span class="val italic" id="valFile">None</span>
+        </div>
+        <div class="context-item" id="ctxProject" title="Vercel Project Aktif">
+          <span class="icon">▲</span>
+          <span class="label">Vercel:</span>
+          <span class="val italic" id="valProject">None</span>
+        </div>
+      </div>
+
+      <!-- Search History -->
+      <div class="search-box">
+        <input type="text" id="historySearch" placeholder="Cari riwayat chat...">
+      </div>
+
+      <!-- Riwayat Chat List -->
+      <div class="history-list" id="historyContainer">
+        <!-- Generatated by riwayat.js -->
+      </div>
+
+      <!-- Sidebar Footer -->
+      <div class="sidebar-footer">
+        <div class="admin-profile">
+          <div class="avatar">AD</div>
+          <div class="profile-info">
+            <span class="email" id="userEmail">admin@admin.com</span>
+            <span class="status">Online</span>
+          </div>
+        </div>
+        <button id="logoutBtn" class="btn-logout" title="Keluar">
+          <span>Logout</span> 🔌
+        </button>
+      </div>
+    </aside>
+
+    <!-- Area Chat Utama -->
+    <main class="chat-workspace">
+      <header class="workspace-header">
+        <button id="menuToggle" class="btn-toggle">☰</button>
+        <div class="current-model">
+          <span class="model-badge">Agent Mode: GPT-4o Mini</span>
+        </div>
+        <button id="clearHistoryBtn" class="btn-clear-history" title="Hapus Semua Riwayat">🧹 Clear</button>
+      </header>
+
+      <!-- Chat Container -->
+      <section class="messages-container" id="chatWindow">
+        <!-- Tampilan Kosong Default -->
+        <div class="empty-state" id="emptyState">
+          <div class="glow-logo">🤖</div>
+          <h1>Apa yang ingin Anda bangun hari ini?</h1>
+          <p>Kendalikan repository GitHub dan deployment Vercel Anda secara otonom menggunakan instruksi bahasa alami.</p>
+          
+          <div class="quick-prompts">
+            <div class="prompt-card" onclick="setQuickPrompt('Cek repo saya')">
+              <h4>🔍 Repositori</h4>
+              <p>"cek repo saya"</p>
+            </div>
+            <div class="prompt-card" onclick="setQuickPrompt('Lihat daftar project Vercel')">
+              <h4>▲ Vercel Status</h4>
+              <p>"lihat daftar project vercel"</p>
+            </div>
+            <div class="prompt-card" onclick="setQuickPrompt('Pilih repo setorgajah dan buka package.json')">
+              <h4>📦 Context Memory</h4>
+              <p>"pilih repo setorgajah lalu buka package.json"</p>
+            </div>
+            <div class="prompt-card" onclick="setQuickPrompt('Fix error')">
+              <h4>🛠️ Auto Fix</h4>
+              <p>"fix error di project aktif"</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Input Area -->
+      <footer class="input-panel">
+        <form id="chatForm">
+          <div class="input-wrapper">
+            <textarea id="promptInput" rows="1" placeholder="Tulis instruksi di sini... (Contoh: 'deploy repo setorgajah')" required></textarea>
+            <button type="submit" id="sendBtn">
+              <svg viewBox="0 0 24 24" class="send-icon">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+              </svg>
+            </button>
+          </div>
+        </form>
+        <div class="footer-note">AI Agent dapat membuat, mengedit kode, dan melakukan deploy otomatis atas izin Anda.</div>
+      </footer>
+    </main>
+  </div>
+
+  <!-- Modal Preview Perubahan (Auto Fix & Code Editor) -->
+  <div class="modal hidden" id="previewModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalTitle">Preview Perubahan Kode</h3>
+        <button class="close-btn" id="closeModalBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-description" id="modalDesc">Analisis kesalahan telah selesai. Berikut draf kode yang akan di-commit:</p>
+        <div class="diff-container">
+          <div class="diff-header">
+            <span class="file-path-badge" id="previewFilePath">file_name.js</span>
+          </div>
+          <div class="diff-views">
+            <div class="diff-pane original-pane">
+              <h5>Kode Saat Ini</h5>
+              <pre><code id="originalCode">No file selected</code></pre>
+            </div>
+            <div class="diff-pane proposed-pane">
+              <h5>Kode Rekomendasi</h5>
+              <pre><code id="proposedCode">No changes proposed</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" id="btnRejectChanges">Batal</button>
+        <button class="btn-confirm" id="btnApplyChanges">Setujui & Deploy</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="riwayat.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

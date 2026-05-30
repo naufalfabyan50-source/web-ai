@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - AI Dev Agent</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="login-body">
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="logo-glow"></div>
+        <div class="logo-icon">💻</div>
+        <h1>AI Dev Agent</h1>
+        <p>Sign in to start building and deploying applications</p>
+      </div>
+      
+      <form id="loginForm">
+        <div class="input-group">
+          <label for="email">Email Admin</label>
+          <input type="email" id="email" required placeholder="email admin">
+        </div>
+        
+        <div class="input-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" required placeholder="••••••••">
+        </div>
+        
+        <div id="errorMessage" class="error-banner hidden">
+          <span class="error-icon">⚠️</span>
+          <span id="errorText">Email atau password salah!</span>
+        </div>
+        
+        <button type="submit" id="loginBtn">
+          <span class="btn-text">Sign In</span>
+          <div class="spinner hidden"></div>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Check if already logged in
+    if (localStorage.getItem('auth_token')) {
+      window.location.href = 'index.html';
+    }
+
+    const loginForm = document.getElementById('loginForm');
+    const errorMessage = document.getElementById('errorMessage');
+    const errorText = document.getElementById('errorText');
+    const loginBtn = document.getElementById('loginBtn');
+    const spinner = loginBtn.querySelector('.spinner');
+    const btnText = loginBtn.querySelector('.btn-text');
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorMessage.classList.add('hidden');
+      loginBtn.disabled = true;
+      spinner.classList.remove('hidden');
+      btnText.classList.add('invisible');
+
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const response = await fetch('/api/agent', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            action: 'login',
+            email,
+            password
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          // Store session token securely (derived backend validator key)
+          localStorage.setItem('auth_token', data.token);
+          localStorage.setItem('admin_email', email);
+          window.location.href = 'index.html';
+        } else {
+          showError(data.error || 'Autentikasi gagal.');
+        }
+      } catch (err) {
+        showError('Gagal menghubungi server. Periksa koneksi Anda.');
+      } finally {
+        loginBtn.disabled = false;
+        spinner.classList.add('hidden');
+        btnText.classList.remove('invisible');
+      }
+    });
+
+    function showError(msg) {
+      errorText.textContent = msg;
+      errorMessage.classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
