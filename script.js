@@ -231,10 +231,10 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // CLOSE MODAL LOGICS
-  closeModalBtn.addEventListener('click', () => { closeModal(); });
-  window.addEventListener('click', (e) => { if (e.target === previewModal) closeModal(); });
+  closeModalBtn.addEventListener('click', () => { closePreviewModal(); });
+  window.addEventListener('click', (e) => { if (e.target === previewModal) closePreviewModal(); });
 
-  function closeModal() {
+  function closePreviewModal() {
     previewModal.classList.add('hidden');
   }
 
