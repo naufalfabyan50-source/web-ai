@@ -16,6 +16,20 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const VERCEL_TOKEN = process.env.VERCEL_TOKEN;
 
+// Validation untuk environment variables yang critical
+const validateEnv = () => {
+  const missing = [];
+  if (!OPENAI_API_KEY) missing.push('OPENAI_API_KEY');
+  if (!GITHUB_TOKEN) missing.push('GITHUB_TOKEN');
+  if (!VERCEL_TOKEN) missing.push('VERCEL_TOKEN');
+  
+  if (missing.length > 0) {
+    console.error('❌ Missing environment variables:', missing.join(', '));
+    return { valid: false, missing };
+  }
+  return { valid: true };
+};
+
 // In-memory/simple hash mock token validation
 const BACKEND_SECRET_TOKEN = 'secure_agent_session_token_validation_key_2026';
 
@@ -89,6 +103,15 @@ export default async function handler(req, res) {
 
   // 4. CHAT AGENT & TOOLS ENGINE (INTEGRATED WITH OPENAI FUNCTION CALLING)
   if (action === 'chat') {
+    // Validasi environment variables sebelum mencoba chat
+    const envCheck = validateEnv();
+    if (!envCheck.valid) {
+      return jsonResponse(res, 500, { 
+        success: false, 
+        error: `❌ Server Configuration Error: Missing ${envCheck.missing.join(', ')}. Hubungi administrator.` 
+      });
+    }
+
     const { message, context, history } = req.body;
 
     // Kumpulan tool runs log untuk diumpankan balik ke tampilan frontend
@@ -294,7 +317,7 @@ Aturan Perilaku:
 
       const aiData = await aiResponse.json();
       if (aiData.error) {
-        return jsonResponse(res, 500, { success: false, error: aiData.error.message });
+        return jsonResponse(res, 500, { success: false, error: `OpenAI API Error: ${aiData.error.message}` });
       }
 
       const choice = aiData.choices[0];
@@ -420,7 +443,7 @@ Aturan Perilaku:
             const currentRepo = updatedContext.activeRepo;
 
             if (!currentProject || !currentRepo) {
-              responseText = "⚠️ **Context Memory Belum Lengkap!**\n\nUntuk mendiagnosis kesalahan secara otomatis, mohon pilih repositori GitHub dan project Vercel aktif Anda terlebih dahulu.\n\nContoh: *\"Pilih repo setorgajah dan project setorgajah-deploy\"*";
+              responseText = "⚠️ **Context Memory Belum Lengkap!**\n\nUntuk mendiagnosis kesalahan secara otomatis, mohon pilih repositori GitHub dan project Vercel aktif Anda terlebih dahulu.";
               toolRuns.push({ name: 'autoFixFlow', status: 'error', details: 'Missing repository or Vercel config.' });
             } else {
               // 1. Dapatkan log deployment terakhir yang error/failed
@@ -442,7 +465,7 @@ Aturan Perilaku:
 ${rawLogs}
 \`\`\`
 
-Tolong identifikasi file penyebab utama kesalahan (misalnya: index.js, package.json, plugins/group.js, dsb.) dan berikan rekomendasi perbaikan kodenya. Format respons harus JSON dengan properti 'path' (string path file) dan 'newCode' (string isi baru seluruh file).`;
+Tolong identifikasi file penyebab utama kesalahan (misalnya: index.js, package.json, plugins/group.js, dsb.) dan berikan rekomendasi perbaikan kodenya. Format respons harus JSON dengan properti 'path' (file path) dan 'newCode' (kode perbaikan yang disarankan).`;
 
                 const isolateResponse = await fetch('https://api.openai.com/v1/chat/completions', {
                   method: 'POST',
@@ -472,7 +495,7 @@ Tolong identifikasi file penyebab utama kesalahan (misalnya: index.js, package.j
                   commitMessage: `fix(build): memperbaiki kesalahan build error pada ${analysisResult.path}`
                 };
 
-                responseText = `🚨 **Error Build Berhasil Diidentifikasi!**\n\n- **Project:** \`${currentProject}\`\n- **Penyebab:** Kesalahan pada berkas \`${analysisResult.path}\`\n- **Hasil Analisis Logs:** Konflik kompilasi / kesalahan sintaks terdeteksi.\n\nSaya telah menyusun draf perbaikan. Silakan tinjau dan klik **Setujui & Deploy** pada modal preview yang muncul.`;
+                responseText = `🚨 **Error Build Berhasil Diidentifikasi!**\n\n- **Project:** \`${currentProject}\`\n- **Penyebab:** Kesalahan pada berkas \`${analysisResult.path}\`\n- **Rekomendasi:** Kode telah dianalisis dan siap untuk diterapkan.`;
                 toolRuns.push({ name: 'autoFixFlow', status: 'success', details: `Menyusun usulan perbaikan pada ${analysisResult.path}` });
               }
             }
